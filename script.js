@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // إعداد مكتبة PDF.js
+    // تفعيل Worker لمكتبة PDF.js لمعالجة ملفات PDF بدقة
     if (window.pdfjsLib) {
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
     }
@@ -18,18 +18,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const charCount = document.getElementById('charCount');
     const loadingOverlay = document.getElementById('loadingOverlay');
 
-    // تحديث الاتجاه RTL/LTR
     function updateDirections() {
         sourceText.dir = sourceLang.value === 'ar' ? 'rtl' : 'ltr';
         targetText.dir = targetLang.value === 'ar' ? 'rtl' : 'ltr';
     }
 
-    // عداد الأحرف (25,000 حرف)
+    // عداد الأحرف (حتى 25,000 حرف)
     sourceText.addEventListener('input', () => {
         charCount.textContent = sourceText.value.length.toLocaleString();
     });
 
-    // استيراد الملفات (TXT و PDF)
+    // استيراد الملفات (TXT أو PDF)
     fileInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -68,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // الترجمة الصوتية (الإملاء الصوتي من الميكروفون)
+    // الترجمة الصوتية (الإملاء الصوتي)
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const recognition = new SpeechRecognition();
@@ -77,7 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
             recognition.lang = sourceLang.value === 'ar' ? 'ar-SA' : 'en-US';
             recognition.start();
             micBtn.classList.add('recording');
-            showToast('جاري الاستماع الآن...', 'info');
+            showToast('جاري الاستماع لصوتك...', 'info');
         });
 
         recognition.onresult = (event) => {
@@ -89,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         recognition.onerror = () => {
             micBtn.classList.remove('recording');
-            showToast('لم نتمكن من سماع الصوت، حاول مجدداً', 'error');
+            showToast('لم يتم التقاط الصوت، حاول مجدداً', 'error');
         };
 
         recognition.onend = () => {
@@ -107,7 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
         window.speechSynthesis.speak(utterance);
     });
 
-    // زر تبديل اللغات
+    // تبديل اللغات
     swapBtn.addEventListener('click', () => {
         const tempLang = sourceLang.value;
         sourceLang.value = targetLang.value;
@@ -122,11 +121,11 @@ document.addEventListener('DOMContentLoaded', () => {
         toggleButtons();
     });
 
-    // تنفيذ الترجمة المجانية باستخدام MyMemory Translate API السريعة
+    // ترجمة النصوص عبر API سريع
     translateBtn.addEventListener('click', async () => {
         const text = sourceText.value.trim();
         if (!text) {
-            showToast('الرجاء أدخل نصاً للترجمة', 'error');
+            showToast('الرجاء كتابة أو استيراد نص للترجمة', 'error');
             return;
         }
 
@@ -140,19 +139,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (data.responseData) {
                 targetText.value = data.responseData.translatedText;
-                showToast('تمت الترجمة السريعة بنجاح ✨', 'success');
+                showToast('تمت الترجمة بنجاح ✨', 'success');
             } else {
                 targetText.value = text;
             }
         } catch (err) {
-            showToast('حدث خطأ في الاتصال بالسيرفر', 'error');
+            showToast('خطأ في الاتصال بالخادم', 'error');
         } finally {
             loadingOverlay.classList.add('hidden');
             toggleButtons();
         }
     });
 
-    // أدوات النسخ والمسح
     clearBtn.addEventListener('click', () => {
         sourceText.value = '';
         targetText.value = '';
