@@ -1,4 +1,3 @@
-/* المتغيرات والأنماط الأساسية */
 :root {
     --bg-main: #f8fafc;
     --bg-card: #ffffff;
@@ -10,21 +9,20 @@
     --primary-hover: #4f46e5;
     --primary-light: #e0e7ff;
     --danger: #ef4444;
-    --success: #10b981;
-    --shadow-sm: 0 1px 2px 0 rgb(0 0_0 / 0.05);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.07);
-    --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.08), 0 8px 10px -6px rgb(0 0 0 / 0.08);
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.07);
+    --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.08);
     --radius-lg: 16px;
     --radius-md: 12px;
     --radius-sm: 8px;
-    --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition: all 0.2s ease-in-out;
 }
 
 * {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 body {
@@ -33,45 +31,38 @@ body {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    -webkit-font-smoothing: antialiased;
 }
 
-/* الهيدر */
 .app-header {
     background: var(--bg-card);
     border-bottom: 1px solid var(--border-color);
-    padding: 1rem 2rem;
+    padding: 0.8rem 1.5rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: var(--shadow-sm);
 }
 
 .logo-container {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.5rem;
 }
 
 .logo-icon {
     background: var(--primary-light);
     color: var(--primary);
-    padding: 8px;
+    padding: 6px;
     border-radius: var(--radius-sm);
     display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 .logo-container h1 {
-    font-size: 1.25rem;
+    font-size: 1.2rem;
     font-weight: 700;
-    letter-spacing: -0.5px;
 }
 
 .gradient-text {
-    background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+    background: linear-gradient(135deg, #6366f1, #a855f7);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
@@ -81,17 +72,16 @@ body {
     font-weight: 600;
     background: var(--primary-light);
     color: var(--primary);
-    padding: 4px 10px;
-    border-radius: 20px;
+    padding: 3px 8px;
+    border-radius: 12px;
 }
 
-/* المحتوى الرئيسي */
 .main-container {
     flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 2rem 1rem;
+    padding: 1.5rem 1rem;
 }
 
 .translator-card {
@@ -100,15 +90,12 @@ body {
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-lg);
     width: 100%;
-    max-width: 1000px;
+    max-width: 1050px;
     overflow: hidden;
-    display: flex;
-    flex-direction: column;
 }
 
-/* شريط التحكم باللغات */
 .toolbar {
-    padding: 1rem 1.5rem;
+    padding: 0.8rem 1.25rem;
     border-bottom: 1px solid var(--border-color);
     background: #fafafa;
 }
@@ -116,79 +103,97 @@ body {
 .language-selector-group {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.5rem;
 }
 
 select {
+    flex: 1;
     background: var(--bg-card);
     border: 1px solid var(--border-color);
-    padding: 0.6rem 1rem;
+    padding: 0.5rem 0.75rem;
     border-radius: var(--radius-sm);
-    font-size: 0.95rem;
-    font-weight: 500;
+    font-size: 0.9rem;
     color: var(--text-main);
     outline: none;
-    cursor: pointer;
-    transition: var(--transition);
-}
-
-select:hover, select:focus {
-    border-color: var(--border-focus);
-    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
 .icon-btn {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
     border-radius: 50%;
-    width: 38px;
-    height: 38px;
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     color: var(--text-muted);
-    transition: var(--transition);
 }
 
-.icon-btn:hover {
-    background: var(--primary-light);
-    color: var(--primary);
-    border-color: var(--primary);
-    transform: rotate(180deg);
-}
-
-/* شبكة اللوحات (النصوص) */
 .panes-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    min-height: 320px;
+    min-height: 340px;
 }
 
 .pane {
     display: flex;
     flex-direction: column;
-    position: relative;
 }
 
 .source-pane {
     border-left: 1px solid var(--border-color);
 }
 
-[dir="ltr"] .source-pane {
-    border-left: none;
-    border-right: 1px solid var(--border-color);
-}
-
 .pane-header {
-    padding: 0.75rem 1.25rem;
+    padding: 0.6rem 1rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
     border-bottom: 1px solid var(--border-color);
-    font-size: 0.875rem;
+    font-size: 0.85rem;
     font-weight: 600;
     color: var(--text-muted);
+    background: #fcfcfc;
+}
+
+.header-actions, .pane-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.action-btn-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--primary);
+    font-size: 0.8rem;
+    cursor: pointer;
+    padding: 3px 6px;
+    border-radius: 4px;
+    background: var(--primary-light);
+}
+
+.action-btn-icon {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px;
+    display: flex;
+    align-items: center;
+}
+
+.action-btn-icon.recording {
+    color: var(--danger);
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.4; }
+    100% { opacity: 1; }
 }
 
 .text-action-btn {
@@ -197,31 +202,24 @@ select:hover, select:focus {
     color: var(--text-muted);
     font-size: 0.8rem;
     cursor: pointer;
-    transition: var(--transition);
-}
-
-.text-action-btn:hover {
-    color: var(--danger);
 }
 
 .icon-action-btn {
-    background: none;
+    background: var(--bg-card);
     border: 1px solid var(--border-color);
-    padding: 4px 8px;
+    padding: 3px 8px;
     border-radius: var(--radius-sm);
     display: flex;
     align-items: center;
     gap: 4px;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: var(--text-muted);
     cursor: pointer;
-    transition: var(--transition);
 }
 
 .icon-action-btn:not(:disabled):hover {
     background: var(--primary-light);
     color: var(--primary);
-    border-color: var(--primary);
 }
 
 .icon-action-btn:disabled {
@@ -238,58 +236,45 @@ select:hover, select:focus {
 textarea {
     width: 100%;
     height: 100%;
-    min-height: 240px;
+    min-height: 250px;
     border: none;
     outline: none;
-    padding: 1.25rem;
-    font-size: 1.05rem;
+    padding: 1rem;
+    font-size: 1rem;
     line-height: 1.6;
     resize: none;
     background: transparent;
-    color: var(--text-main);
-}
-
-textarea::placeholder {
-    color: #94a3b8;
 }
 
 .pane-footer {
-    padding: 0.75rem 1.25rem;
+    padding: 0.5rem 1rem;
     border-top: 1px solid var(--border-color);
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     color: var(--text-muted);
     display: flex;
     justify-content: flex-end;
 }
 
-/* شاشة التحميل (Loading) */
 .loading-overlay {
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(2px);
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.75rem;
-    font-size: 0.9rem;
+    gap: 0.5rem;
+    font-size: 0.85rem;
     color: var(--primary);
-    font-weight: 500;
-    transition: var(--transition);
 }
 
 .loading-overlay.hidden {
-    opacity: 0;
-    visibility: hidden;
+    display: none;
 }
 
 .spinner {
-    width: 32px;
-    height: 32px;
+    width: 24px;
+    height: 24px;
     border: 3px solid var(--primary-light);
     border-top-color: var(--primary);
     border-radius: 50%;
@@ -300,9 +285,8 @@ textarea::placeholder {
     to { transform: rotate(360deg); }
 }
 
-/* الفوتر وسر الزر الرئيسي */
 .action-footer {
-    padding: 1rem 1.5rem;
+    padding: 0.8rem 1.25rem;
     background: #fafafa;
     border-top: 1px solid var(--border-color);
     display: flex;
@@ -310,35 +294,26 @@ textarea::placeholder {
 }
 
 .primary-btn {
-    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    background: var(--primary);
     color: white;
     border: none;
-    padding: 0.75rem 2rem;
+    padding: 0.6rem 1.5rem;
     border-radius: var(--radius-sm);
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 600;
     display: flex;
     align-items: center;
     gap: 0.5rem;
     cursor: pointer;
-    box-shadow: var(--shadow-sm);
-    transition: var(--transition);
 }
 
 .primary-btn:hover {
-    opacity: 0.95;
-    box-shadow: var(--shadow-md);
-    transform: translateY(-1px);
+    background: var(--primary-hover);
 }
 
-.primary-btn:active {
-    transform: translateY(0);
-}
-
-/* التنبيهات (Toast Notifications) */
 .toast-container {
     position: fixed;
-    bottom: 2rem;
+    bottom: 1.5rem;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
@@ -350,52 +325,26 @@ textarea::placeholder {
 .toast {
     background: #0f172a;
     color: white;
-    padding: 0.75rem 1.5rem;
+    padding: 0.6rem 1.2rem;
     border-radius: var(--radius-sm);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     box-shadow: var(--shadow-lg);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    animation: fadeInUp 0.3s ease forwards;
 }
 
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-/* التجاوب (Responsive Design) */
+/* إصلاح العرض والتجاوب للهواتف المحمولة */
 @media (max-width: 768px) {
     .panes-grid {
         grid-template-columns: 1fr;
     }
-    
     .source-pane {
         border-left: none;
         border-bottom: 1px solid var(--border-color);
     }
-
-    .app-header {
-        padding: 1rem;
-    }
-
-    .toolbar {
-        padding: 0.75rem 1rem;
-    }
-
     .language-selector-group {
-        width: 100%;
-        justify-content: space-between;
+        gap: 0.25rem;
     }
-
     select {
-        flex: 1;
+        font-size: 0.8rem;
+        padding: 0.4rem;
     }
 }
