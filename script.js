@@ -1,5 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // العناصر الأساسية في الواجهة
+    // إعداد مكتبة PDF.js
+    if (window.pdfjsLib) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+    }
+
     const sourceText = document.getElementById('sourceText');
     const targetText = document.getElementById('targetText');
     const sourceLang = document.getElementById('sourceLang');
@@ -8,49 +12,102 @@ document.addEventListener('DOMContentLoaded', () => {
     const translateBtn = document.getElementById('translateBtn');
     const clearBtn = document.getElementById('clearBtn');
     const copyBtn = document.getElementById('copyBtn');
+    const speakBtn = document.getElementById('speakBtn');
+    const micBtn = document.getElementById('micBtn');
+    const fileInput = document.getElementById('fileInput');
     const charCount = document.getElementById('charCount');
     const loadingOverlay = document.getElementById('loadingOverlay');
-    const toastContainer = document.getElementById('toastContainer');
 
-    // قاموس محاكاة ذكي للترجمة الفورية المتقدمة
-    const mockDictionary = {
-        'ar-en': {
-            'مرحباً': 'Hello',
-            'السلام عليكم': 'Peace be upon you',
-            'كيف حالك؟': 'How are you?',
-            'صباح الخير': 'Good morning',
-            'مساء الخير': 'Good evening',
-            'شكراً لك': 'Thank you',
-            'ما هو اسمك؟': 'What is your name?',
-            'أنا أتعلم برمجة الواجهات': 'I am learning frontend development',
-            'تطوير الويب هو شغفي': 'Web development is my passion'
-        },
-        'en-ar': {
-            'hello': 'مرحباً',
-            'hi': 'أهلاً',
-            'how are you?': 'كيف حالك؟',
-            'good morning': 'صباح الخير',
-            'good evening': 'مساء الخير',
-            'thank you': 'شكراً لك',
-            'web development': 'تطوير الويب',
-            'frontend developer': 'مطور واجهات أمامية',
-            'artificial intelligence': 'الذكاء الاصطناعي'
-        }
-    };
-
-    // تحديث اتجاه النصوص (RTL / LTR) وخصائص الإدخال
-    function updateTextDirection() {
+    // تحديث الاتجاه RTL/LTR
+    function updateDirections() {
         sourceText.dir = sourceLang.value === 'ar' ? 'rtl' : 'ltr';
         targetText.dir = targetLang.value === 'ar' ? 'rtl' : 'ltr';
     }
 
-    // عداد الأحرف
+    // عداد الأحرف (25,000 حرف)
     sourceText.addEventListener('input', () => {
-        const length = sourceText.value.length;
-        charCount.textContent = length;
+        charCount.textContent = sourceText.value.length.toLocaleString();
     });
 
-    // تبديل اللغات
+    // استيراد الملفات (TXT و PDF)
+    fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (file.type === 'text/plain') {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                sourceText.value = event.target.result.slice(0, 25000);
+                charCount.textContent = sourceText.value.length.toLocaleString();
+                showToast('تم استيراد النص بنجاح 📄', 'info');
+            };
+            reader.readAsText(file);
+        } else if (file.type === 'application/pdf') {
+            try {
+                loadingOverlay.classList.remove('hidden');
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                let fullText = '';
+
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    const pageText = textContent.items.map(item => item.str).join(' ');
+                    fullText += pageText + '\n';
+                    if (fullText.length >= 25000) break;
+                }
+
+                sourceText.value = fullText.slice(0, 25000);
+                charCount.textContent = sourceText.value.length.toLocaleString();
+                showToast('تم استخراج النص من ملف PDF بنجاح 📑', 'info');
+            } catch (err) {
+                showToast('حدث خطأ أثناء قراءة ملف PDF', 'error');
+            } finally {
+                loadingOverlay.classList.add('hidden');
+            }
+        }
+    });
+
+    // الترجمة الصوتية (الإملاء الصوتي من الميكروفون)
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+
+        micBtn.addEventListener('click', () => {
+            recognition.lang = sourceLang.value === 'ar' ? 'ar-SA' : 'en-US';
+            recognition.start();
+            micBtn.classList.add('recording');
+            showToast('جاري الاستماع الآن...', 'info');
+        });
+
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            sourceText.value += ' ' + transcript;
+            charCount.textContent = sourceText.value.length.toLocaleString();
+            micBtn.classList.remove('recording');
+        };
+
+        recognition.onerror = () => {
+            micBtn.classList.remove('recording');
+            showToast('لم نتمكن من سماع الصوت، حاول مجدداً', 'error');
+        };
+
+        recognition.onend = () => {
+            micBtn.classList.remove('recording');
+        };
+    } else {
+        micBtn.style.display = 'none';
+    }
+
+    // القراءة الصوتية للنص المترجم (Text-To-Speech)
+    speakBtn.addEventListener('click', () => {
+        if (!targetText.value) return;
+        const utterance = new SpeechSynthesisUtterance(targetText.value);
+        utterance.lang = targetLang.value;
+        window.speechSynthesis.speak(utterance);
+    });
+
+    // زر تبديل اللغات
     swapBtn.addEventListener('click', () => {
         const tempLang = sourceLang.value;
         sourceLang.value = targetLang.value;
@@ -60,104 +117,75 @@ document.addEventListener('DOMContentLoaded', () => {
         sourceText.value = targetText.value;
         targetText.value = tempText;
 
-        charCount.textContent = sourceText.value.length;
-        updateTextDirection();
-        toggleCopyButton();
-        showToast('تم تبديل اللغات بنجاح', 'info');
+        charCount.textContent = sourceText.value.length.toLocaleString();
+        updateDirections();
+        toggleButtons();
     });
 
-    // تغيير اللغات عبر القوائم
-    sourceLang.addEventListener('change', updateTextDirection);
-    targetLang.addEventListener('change', updateTextDirection);
+    // تنفيذ الترجمة المجانية باستخدام MyMemory Translate API السريعة
+    translateBtn.addEventListener('click', async () => {
+        const text = sourceText.value.trim();
+        if (!text) {
+            showToast('الرجاء أدخل نصاً للترجمة', 'error');
+            return;
+        }
 
-    // زر مسح النص
+        loadingOverlay.classList.remove('hidden');
+
+        try {
+            const sLang = sourceLang.value;
+            const tLang = targetLang.value;
+            const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text.slice(0, 2000))}&langpair=${sLang}|${tLang}`);
+            const data = await response.json();
+
+            if (data.responseData) {
+                targetText.value = data.responseData.translatedText;
+                showToast('تمت الترجمة السريعة بنجاح ✨', 'success');
+            } else {
+                targetText.value = text;
+            }
+        } catch (err) {
+            showToast('حدث خطأ في الاتصال بالسيرفر', 'error');
+        } finally {
+            loadingOverlay.classList.add('hidden');
+            toggleButtons();
+        }
+    });
+
+    // أدوات النسخ والمسح
     clearBtn.addEventListener('click', () => {
         sourceText.value = '';
         targetText.value = '';
         charCount.textContent = '0';
-        toggleCopyButton();
-        sourceText.focus();
+        toggleButtons();
     });
 
-    // تفعيل أو تعطيل زر النسخ بناءً على وجود نص مترجم
-    function toggleCopyButton() {
+    copyBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(targetText.value);
+        showToast('تم النسخ إلى الحافظة 📋', 'success');
+    });
+
+    function toggleButtons() {
         if (targetText.value.trim() !== '') {
             copyBtn.removeAttribute('disabled');
+            speakBtn.removeAttribute('disabled');
         } else {
             copyBtn.setAttribute('disabled', 'true');
+            speakBtn.setAttribute('disabled', 'true');
         }
     }
 
-    // زر الترجمة مع محاكاة ذكية لبيئة منتج SaaS
-    translateBtn.addEventListener('click', () => {
-        const textToTranslate = sourceText.value.trim();
-
-        if (!textToTranslate) {
-            showToast('الرجاء إدخال نص للترجمة أولاً', 'error');
-            sourceText.focus();
-            return;
-        }
-
-        // إظهار حالة التحميل
-        loadingOverlay.classList.remove('hidden');
-
-        setTimeout(() => {
-            const sLang = sourceLang.value;
-            const tLang = targetLang.value;
-            const key = `${sLang}-${tLang}`;
-
-            let translatedResult = '';
-
-            // فحص القاموس التجريبي أو توليد محاكاة احترافية
-            if (mockDictionary[key] && mockDictionary[key][textToTranslate.toLowerCase()]) {
-                translatedResult = mockDictionary[key][textToTranslate.toLowerCase()];
-            } else {
-                // محاكاة ترجمة متقدمة للنصوص العامة
-                if (sLang === tLang) {
-                    translatedResult = textToTranslate;
-                } else {
-                    translatedResult = `[ترجمة ${sLang.toUpperCase()} إلى ${tLang.toUpperCase()}] : ${textToTranslate}`;
-                }
-            }
-
-            targetText.value = translatedResult;
-            loadingOverlay.classList.add('hidden');
-            toggleCopyButton();
-            showToast('تمت الترجمة بنجاح ✨', 'success');
-        }, 600); // محاكاة زمن استجابة API حقيقي وسريع
-    });
-
-    // نسخ الترجمة إلى الحافظة
-    copyBtn.addEventListener('click', () => {
-        if (!targetText.value) return;
-
-        navigator.clipboard.writeText(targetText.value).then(() => {
-            showToast('تم نسخ النص إلى الحافظة 📋', 'success');
-        }).catch(() => {
-            showToast('تعذر نسخ النص', 'error');
-        });
-    });
-
-    // نظام التنبيهات (Toast Notifications)
-    function showToast(message, type = 'success') {
+    function showToast(msg, type = 'info') {
         const toast = document.createElement('div');
-        toast.className = `toast`;
-        toast.textContent = message;
-
-        if (type === 'error') {
-            toast.style.background = 'var(--danger)';
-        } else if (type === 'info') {
-            toast.style.background = 'var(--primary)';
-        }
-
-        toastContainer.appendChild(toast);
-
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            setTimeout(() => toast.remove(), 300);
-        }, 2500);
+        toast.className = 'toast';
+        toast.textContent = msg;
+        if (type === 'error') toast.style.background = 'var(--danger)';
+        if (type === 'success') toast.style.background = 'var(--primary)';
+        document.getElementById('toastContainer').appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
     }
 
-    // التهيئة الأولية
-    updateTextDirection();
+    sourceLang.addEventListener('change', updateDirections);
+    targetLang.addEventListener('change', updateDirections);
+    updateDirections();
 });
