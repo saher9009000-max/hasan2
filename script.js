@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // تفعيل Worker لمكتبة PDF.js لمعالجة ملفات PDF بدقة
     if (window.pdfjsLib) {
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
     }
@@ -19,16 +18,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadingOverlay = document.getElementById('loadingOverlay');
 
     function updateDirections() {
-        sourceText.dir = sourceLang.value === 'ar' ? 'rtl' : 'ltr';
-        targetText.dir = targetLang.value === 'ar' ? 'rtl' : 'ltr';
+        sourceText.dir = sourceLang.value === 'ar' || sourceLang.value === 'fa' || sourceLang.value === 'ur' ? 'rtl' : 'ltr';
+        targetText.dir = targetLang.value === 'ar' || targetLang.value === 'fa' || targetLang.value === 'ur' ? 'rtl' : 'ltr';
     }
 
-    // عداد الأحرف (حتى 25,000 حرف)
     sourceText.addEventListener('input', () => {
         charCount.textContent = sourceText.value.length.toLocaleString();
     });
 
-    // استيراد الملفات (TXT أو PDF)
+    // استيراد واستخراج النصوص من ملفات TXT أو PDF
     fileInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -38,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
             reader.onload = (event) => {
                 sourceText.value = event.target.result.slice(0, 25000);
                 charCount.textContent = sourceText.value.length.toLocaleString();
-                showToast('تم استيراد النص بنجاح 📄', 'info');
+                showToast('تم رفع واستخراج النص 📄', 'info');
             };
             reader.readAsText(file);
         } else if (file.type === 'application/pdf') {
@@ -58,16 +56,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 sourceText.value = fullText.slice(0, 25000);
                 charCount.textContent = sourceText.value.length.toLocaleString();
-                showToast('تم استخراج النص من ملف PDF بنجاح 📑', 'info');
+                showToast('تم استخراج النص من ملف PDF 📑', 'info');
             } catch (err) {
-                showToast('حدث خطأ أثناء قراءة ملف PDF', 'error');
+                showToast('خطأ أثناء قراءة PDF', 'error');
             } finally {
                 loadingOverlay.classList.add('hidden');
             }
         }
     });
 
-    // الترجمة الصوتية (الإملاء الصوتي)
+    // الترجمة الصوتية عبر الميكروفون
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const recognition = new SpeechRecognition();
@@ -76,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
             recognition.lang = sourceLang.value === 'ar' ? 'ar-SA' : 'en-US';
             recognition.start();
             micBtn.classList.add('recording');
-            showToast('جاري الاستماع لصوتك...', 'info');
+            showToast('جاري تسجيل الصوت...', 'info');
         });
 
         recognition.onresult = (event) => {
@@ -86,19 +84,11 @@ document.addEventListener('DOMContentLoaded', () => {
             micBtn.classList.remove('recording');
         };
 
-        recognition.onerror = () => {
-            micBtn.classList.remove('recording');
-            showToast('لم يتم التقاط الصوت، حاول مجدداً', 'error');
-        };
-
-        recognition.onend = () => {
-            micBtn.classList.remove('recording');
-        };
-    } else {
-        micBtn.style.display = 'none';
+        recognition.onerror = () => micBtn.classList.remove('recording');
+        recognition.onend = () => micBtn.classList.remove('recording');
     }
 
-    // القراءة الصوتية للنص المترجم (Text-To-Speech)
+    // القراءة الصوتية للنص المترجم
     speakBtn.addEventListener('click', () => {
         if (!targetText.value) return;
         const utterance = new SpeechSynthesisUtterance(targetText.value);
@@ -121,11 +111,11 @@ document.addEventListener('DOMContentLoaded', () => {
         toggleButtons();
     });
 
-    // ترجمة النصوص عبر API سريع
+    // زر الترجمة الرئيسي
     translateBtn.addEventListener('click', async () => {
         const text = sourceText.value.trim();
         if (!text) {
-            showToast('الرجاء كتابة أو استيراد نص للترجمة', 'error');
+            showToast('أدخل نصاً أولاً', 'error');
             return;
         }
 
@@ -140,11 +130,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.responseData) {
                 targetText.value = data.responseData.translatedText;
                 showToast('تمت الترجمة بنجاح ✨', 'success');
-            } else {
-                targetText.value = text;
             }
         } catch (err) {
-            showToast('خطأ في الاتصال بالخادم', 'error');
+            showToast('خطأ في الاتصال بالسيرفر', 'error');
         } finally {
             loadingOverlay.classList.add('hidden');
             toggleButtons();
@@ -160,7 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     copyBtn.addEventListener('click', () => {
         navigator.clipboard.writeText(targetText.value);
-        showToast('تم النسخ إلى الحافظة 📋', 'success');
+        showToast('تم النسخ 📋', 'success');
     });
 
     function toggleButtons() {
@@ -180,7 +168,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (type === 'error') toast.style.background = 'var(--danger)';
         if (type === 'success') toast.style.background = 'var(--primary)';
         document.getElementById('toastContainer').appendChild(toast);
-        setTimeout(() => toast.remove(), 3000);
+        setTimeout(() => toast.remove(), 2500);
     }
 
     sourceLang.addEventListener('change', updateDirections);
