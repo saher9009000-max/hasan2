@@ -6,6 +6,9 @@
 <title>ترجمة | Translate Pro</title>
 <link rel="stylesheet" href="style.css">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+<!-- مكتبات استخراج النص من الملفات -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
 <body>
   <div class="bg-glow"></div>
@@ -25,8 +28,10 @@
 
       <div class="panes">
         <div class="pane">
-          <textarea id="inputText" placeholder="اكتب النص هنا..."></textarea>
+          <textarea id="inputText" placeholder="اكتب النص هنا أو استورد ملفاً..."></textarea>
           <div class="pane-actions">
+            <input type="file" id="fileInput" accept=".txt,.docx,.pdf,.srt,.md" hidden>
+            <button id="importBtn" class="icon-btn" title="استيراد ملف">📁</button>
             <button id="micBtn" class="icon-btn" title="إدخال صوتي">🎤</button>
             <button id="speakInput" class="icon-btn" title="نطق النص">🔊</button>
             <button id="clearBtn" class="icon-btn" title="مسح">🗑️</button>
@@ -38,6 +43,7 @@
           <div class="pane-actions">
             <button id="speakOutput" class="icon-btn" title="نطق الترجمة">🔊</button>
             <button id="copyBtn" class="icon-btn" title="نسخ">📋</button>
+            <button id="downloadBtn" class="icon-btn" title="تحميل الترجمة">💾</button>
           </div>
         </div>
       </div>
