@@ -5,8 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ترجمة | Translate Pro</title>
 <link rel="stylesheet" href="style.css">
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
-<!-- مكتبات استخراج النص من الملفات -->
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
@@ -14,16 +13,26 @@
   <div class="bg-glow"></div>
 
   <header class="header">
-    <div class="logo">🌐 <span>ترجمة</span></div>
+    <div class="header-top">
+      <h1 class="logo">🌐 ترجمة</h1>
+      <button id="voiceTranslateBtn" class="voice-translate-btn">🎙️ ترجمة صوتية</button>
+    </div>
     <p class="tagline">ترجم نصوصك وصوتك بين أكثر من 100 لغة</p>
   </header>
 
   <main class="container">
     <section class="card">
+
       <div class="lang-bar">
-        <select id="fromLang" class="lang-select"></select>
+        <div class="lang-group">
+          <label>من</label>
+          <select id="fromLang" class="lang-select"></select>
+        </div>
         <button id="swapBtn" class="swap-btn" title="تبديل">⇄</button>
-        <select id="toLang" class="lang-select"></select>
+        <div class="lang-group">
+          <label>إلى</label>
+          <select id="toLang" class="lang-select"></select>
+        </div>
       </div>
 
       <div class="panes">
@@ -31,7 +40,7 @@
           <textarea id="inputText" placeholder="اكتب النص هنا أو استورد ملفاً..."></textarea>
           <div class="pane-actions">
             <input type="file" id="fileInput" accept=".txt,.docx,.pdf,.srt,.md" hidden>
-            <button id="importBtn" class="icon-btn" title="استيراد ملف">📁</button>
+            <button id="importBtn" class="import-btn">📁 استيراد ملف</button>
             <button id="micBtn" class="icon-btn" title="إدخال صوتي">🎤</button>
             <button id="speakInput" class="icon-btn" title="نطق النص">🔊</button>
             <button id="clearBtn" class="icon-btn" title="مسح">🗑️</button>
@@ -48,7 +57,22 @@
         </div>
       </div>
 
-      <button id="translateBtn" class="main-btn">ترجم الآن</button>
+      <!-- ===== شريط التقدم ===== -->
+      <div id="progressWrap" class="progress-wrap" hidden>
+        <div class="progress-info">
+          <span id="progressLabel">جارٍ الترجمة...</span>
+          <span id="progressPct">0%</span>
+        </div>
+        <div class="progress-bar"><div id="progressFill" class="progress-fill"></div></div>
+      </div>
+
+      <!-- ===== أزرار الترجمة ===== -->
+      <div class="action-row">
+        <button id="translateBtn" class="main-btn">ترجم الآن</button>
+        <button id="translateFileBtn" class="main-btn file-btn">📄 ترجمة ملف كامل</button>
+        <button id="stopBtn" class="stop-btn" hidden>⏹️ إيقاف</button>
+      </div>
+
     </section>
   </main>
 
