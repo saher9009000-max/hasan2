@@ -25,7 +25,6 @@ body {
   position: relative;
 }
 
-/* توهج خلفي */
 .bg-glow {
   position: fixed;
   inset: 0;
@@ -69,7 +68,6 @@ body {
   box-shadow: 0 20px 60px rgba(0,0,0,0.4);
 }
 
-/* شريط اللغات */
 .lang-bar {
   display: flex;
   gap: 12px;
@@ -108,7 +106,6 @@ body {
 }
 .swap-btn:hover { transform: rotate(180deg) scale(1.05); }
 
-/* النص */
 .panes {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -148,6 +145,7 @@ body {
   gap: 8px;
   justify-content: flex-end;
   margin-top: 10px;
+  flex-wrap: wrap;
 }
 
 .icon-btn {
@@ -166,7 +164,6 @@ body {
   transform: translateY(-2px);
 }
 
-/* زر الترجمة */
 .main-btn {
   width: 100%;
   padding: 18px;
@@ -191,7 +188,6 @@ body {
 
 .footer { margin-top: 30px; color: var(--muted); font-size: 0.9rem; }
 
-/* جوال */
 @media (max-width: 700px) {
   .panes { grid-template-columns: 1fr; }
   .lang-bar { flex-wrap: wrap; }
