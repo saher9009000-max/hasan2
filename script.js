@@ -1,4 +1,4 @@
-// ===== أكثر من 100 لغة =====
+// ===== اللغات =====
 const LANGUAGES = {
   ar:"العربية", en:"الإنجليزية", fr:"الفرنسية", es:"الإسبانية", de:"الألمانية",
   it:"الإيطالية", pt:"البرتغالية", ru:"الروسية", zh:"الصينية (مبسطة)",
@@ -16,7 +16,7 @@ const LANGUAGES = {
   bs:"البوسنية", mk:"المقدونية", sq:"الألبانية", lt:"الليتوانية",
   lv:"اللاتفية", et:"الإستونية", be:"البيلاروسية", ka:"الجورجية",
   hy:"الأرمنية", az:"الأذربيجانية", kk:"الكازاخية", uz:"الأوزبكية",
-  ky:"القرغيزية", tg:"الطاجيكية", mn:"المنغولية", ps:"الباشتو", ku:"الكردية",
+  ky:"القرغيزية", tg:"الطاجيكية", mn:"المنغولية", ps:"الباشتوية", ku:"الكردية",
   ca:"الكاتالونية", gl:"الغاليسية", eu:"الباسكية", mt:"المالطية",
   ga:"الأيرلندية", cy:"الويلزية", la:"اللاتينية", eo:"الإسبرانتو",
   tl:"الفلبينية", jv:"الجاوية", su:"السوندية", ceb:"السيبوانية",
@@ -29,6 +29,13 @@ const toLang = document.getElementById("toLang");
 const inputText = document.getElementById("inputText");
 const outputText = document.getElementById("outputText");
 const fileInput = document.getElementById("fileInput");
+const progressWrap = document.getElementById("progressWrap");
+const progressFill = document.getElementById("progressFill");
+const progressLabel = document.getElementById("progressLabel");
+const progressPct = document.getElementById("progressPct");
+const stopBtn = document.getElementById("stopBtn");
+
+let abortFlag = false;
 
 // ملء القوائم
 const sorted = Object.entries(LANGUAGES).sort((a,b) => a[1].localeCompare(b[1],"ar"));
@@ -45,20 +52,132 @@ document.getElementById("swapBtn").onclick = () => {
   [inputText.value, outputText.value] = [outputText.value, inputText.value];
 };
 
-// الترجمة
+// ===== ترجمة مقطع واحد =====
+async function translateChunk(text, from, to) {
+  const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${from}|${to}`;
+  const res = await fetch(url);
+  const data = await res.json();
+  return data.responseData.translatedText || "";
+}
+
+// ===== تقسيم النص إلى مقاطع ≤ 450 حرف =====
+function splitText(text, max = 450) {
+  const parts = [];
+  let current = "";
+  // نقسم على الجمل أولاً
+  const sentences = text.split(/(?<=[.!?؟\n])\s+/);
+  for (const s of sentences) {
+    if ((current + s).length > max) {
+      if (current) parts.push(current.trim());
+      // إن كانت الجملة نفسها طويلة جداً نقسمها بالمسافات
+      if (s.length > max) {
+        let chunk = "";
+        for (const word of s.split(/\s+/)) {
+          if ((chunk + " " + word).length > max) {
+            if (chunk) parts.push(chunk.trim());
+            chunk = word;
+          } else chunk += " " + word;
+        }
+        if (chunk.trim()) parts.push(chunk.trim());
+      } else {
+        current = s;
+      }
+    } else {
+      current += s + " ";
+    }
+  }
+  if (current.trim()) parts.push(current.trim());
+  return parts;
+}
+
+// ===== تحديث شريط التقدم =====
+function setProgress(done, total) {
+  progressWrap.hidden = false;
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  progressFill.style.width = pct + "%";
+  progressPct.textContent = pct + "%";
+  progressLabel.textContent = `جارٍ الترجمة... (${done}/${total} مقطع)`;
+}
+function hideProgress() {
+  progressWrap.hidden = true;
+  progressFill.style.width = "0%";
+}
+
+// ===== ترجمة النص كاملاً على دفعات =====
+async function translateAll(text, from, to) {
+  const chunks = splitText(text);
+  let result = "";
+  abortFlag = false;
+  setProgress(0, chunks.length);
+
+  for (let i = 0; i < chunks.length; i++) {
+    if (abortFlag) break;
+    let t = "";
+    try {
+      t = await translateChunk(chunks[i], from, to);
+    } catch {
+      t = chunks[i]; // إن فشل المقطع نُبقي الأصل
+    }
+    result += t + "\n";
+    setProgress(i + 1, chunks.length);
+    await new Promise(r => setTimeout(r, 250));
+  }
+  return result.trim();
+}
+
+// ===== زر ترجم الآن =====
 document.getElementById("translateBtn").onclick = async () => {
   const text = inputText.value.trim();
   if (!text) return alert("اكتب نصاً أو استورد ملفاً أولاً");
-
-  outputText.value = "⏳ جارٍ الترجمة...";
+  outputText.value = "";
   try {
-    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text.slice(0,500))}&langpair=${fromLang.value}|${toLang.value}`;
-    const res = await fetch(url);
-    const data = await res.json();
-    outputText.value = data.responseData.translatedText || "❌ تعذّرت الترجمة";
+    const result = await translateAll(text, fromLang.value, toLang.value);
+    outputText.value = result || "❌ تعذّرت الترجمة";
   } catch {
     outputText.value = "❌ خطأ في الاتصال";
+  } finally {
+    hideProgress();
   }
+};
+
+// ===== زر ترجمة ملف كامل (10 آلاف حرف وأكثر) =====
+document.getElementById("translateFileBtn").onclick = async () => {
+  const text = inputText.value.trim();
+  if (!text) return alert("استورد ملفاً أولاً (زر 📁 استيراد ملف)");
+  outputText.value = "";
+  stopBtn.hidden = false;
+  try {
+    const result = await translateAll(text, fromLang.value, toLang.value);
+    outputText.value = result || "❌ تعذّرت الترجمة";
+  } catch {
+    outputText.value = "❌ خطأ في الاتصال";
+  } finally {
+    hideProgress();
+    stopBtn.hidden = true;
+  }
+};
+
+// إيقاف
+stopBtn.onclick = () => { abortFlag = true; };
+
+// ===== زر الترجمة الصوتية =====
+document.getElementById("voiceTranslateBtn").onclick = () => {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return alert("متصفحك لا يدعم الإدخال الصوتي. جرّب Chrome.");
+  const r = new SR();
+  r.lang = fromLang.value;
+  r.onresult = async (e) => {
+    const spoken = e.results[0][0].transcript;
+    inputText.value = spoken;
+    outputText.value = "⏳ جارٍ ترجمة صوتك...";
+    try {
+      const tr = await translateChunk(spoken, fromLang.value, toLang.value);
+      outputText.value = tr;
+      speak(tr, toLang.value);
+    } catch { outputText.value = "❌ خطأ"; }
+  };
+  r.onerror = () => alert("تعذّر التقاط الصوت");
+  r.start();
 };
 
 // ===== استيراد الملفات =====
@@ -69,28 +188,25 @@ fileInput.onchange = async (e) => {
   if (!file) return;
   const ext = file.name.split(".").pop().toLowerCase();
   inputText.value = "⏳ جارٍ قراءة الملف...";
-
   try {
     let text = "";
     if (ext === "txt" || ext === "md" || ext === "srt") {
       text = await file.text();
-      if (ext === "srt") text = text.replace(/^\d+\s*$/gm, "").replace(/\d{2}:\d{2}:\d{2},\d{3} --> .*/g, "").trim();
+      if (ext === "srt")
+        text = text.replace(/^\d+\s*$/gm, "").replace(/\d{2}:\d{2}:\d{2},\d{3} --> .*/g, "").trim();
     } else if (ext === "docx") {
       const buf = await file.arrayBuffer();
       const result = await mammoth.extractRawText({ arrayBuffer: buf });
       text = result.value;
     } else if (ext === "pdf") {
       text = await extractPDF(file);
-    } else {
-      text = "❌ صيغة غير مدعومة";
-    }
+    } else { text = "❌ صيغة غير مدعومة"; }
     inputText.value = text.trim() || "(الملف فارغ)";
   } catch (err) {
     inputText.value = "❌ فشل قراءة الملف: " + err.message;
   }
 };
 
-// استخراج PDF
 async function extractPDF(file) {
   const buf = await file.arrayBuffer();
   pdfjsLib.GlobalWorkerOptions.workerSrc =
@@ -105,7 +221,7 @@ async function extractPDF(file) {
   return full;
 }
 
-// إدخال صوتي
+// ===== إدخال صوتي =====
 document.getElementById("micBtn").onclick = () => {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) return alert("متصفحك لا يدعم الإدخال الصوتي. جرّب Chrome.");
@@ -116,7 +232,7 @@ document.getElementById("micBtn").onclick = () => {
   r.start();
 };
 
-// النطق
+// ===== نطق =====
 function speak(text, lang) {
   if (!text) return;
   const u = new SpeechSynthesisUtterance(text);
@@ -133,7 +249,7 @@ document.getElementById("copyBtn").onclick = () => {
   alert("✅ تم النسخ");
 };
 
-// تحميل الترجمة
+// تحميل
 document.getElementById("downloadBtn").onclick = () => {
   if (!outputText.value) return;
   const blob = new Blob([outputText.value], { type: "text/plain;charset=utf-8" });
@@ -147,4 +263,5 @@ document.getElementById("downloadBtn").onclick = () => {
 document.getElementById("clearBtn").onclick = () => {
   inputText.value = "";
   outputText.value = "";
+  hideProgress();
 };
