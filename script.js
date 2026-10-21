@@ -1,177 +1,91 @@
-document.addEventListener('DOMContentLoaded', () => {
-    if (window.pdfjsLib) {
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
-    }
+// ===== قائمة اللغات =====
+const LANGUAGES = {
+  ar: "العربية", en: "الإنجليزية", fr: "الفرنسية", es: "الإسبانية",
+  de: "الألمانية", it: "الإيطالية", pt: "البرتغالية", ru: "الروسية",
+  zh: "الصينية", ja: "اليابانية", ko: "الكورية", tr: "التركية",
+  hi: "الهندية", ur: "الأردية", fa: "الفارسية", nl: "الهولندية",
+  sv: "السويدية", pl: "البولندية", uk: "الأوكرانية", ro: "الرومانية",
+  el: "اليونانية", he: "العبرية", th: "التايلاندية", vi: "الفيتنامية",
+  id: "الإندونيسية", ms: "الماليزية", bn: "البنغالية", ta: "التاميلية",
+  sw: "السواحيلية", no: "النرويجية", da: "الدنماركية", fi: "الفنلندية",
+  cs: "التشيكية", hu: "المجرية", bg: "البلغارية", sr: "الصربية",
+  hr: "الكرواتية", sk: "السلوفاكية", ca: "الكاتالونية", tl: "الفلبينية"
+};
 
-    const sourceText = document.getElementById('sourceText');
-    const targetText = document.getElementById('targetText');
-    const sourceLang = document.getElementById('sourceLang');
-    const targetLang = document.getElementById('targetLang');
-    const swapBtn = document.getElementById('swapBtn');
-    const translateBtn = document.getElementById('translateBtn');
-    const clearBtn = document.getElementById('clearBtn');
-    const copyBtn = document.getElementById('copyBtn');
-    const speakBtn = document.getElementById('speakBtn');
-    const micBtn = document.getElementById('micBtn');
-    const fileInput = document.getElementById('fileInput');
-    const charCount = document.getElementById('charCount');
-    const loadingOverlay = document.getElementById('loadingOverlay');
+const fromLang = document.getElementById("fromLang");
+const toLang = document.getElementById("toLang");
+const inputText = document.getElementById("inputText");
+const outputText = document.getElementById("outputText");
 
-    function updateDirections() {
-        sourceText.dir = sourceLang.value === 'ar' || sourceLang.value === 'fa' || sourceLang.value === 'ur' ? 'rtl' : 'ltr';
-        targetText.dir = targetLang.value === 'ar' || targetLang.value === 'fa' || targetLang.value === 'ur' ? 'rtl' : 'ltr';
-    }
+// ملء القوائم
+for (const [code, name] of Object.entries(LANGUAGES)) {
+  fromLang.innerHTML += `<option value="${code}">${name}</option>`;
+  toLang.innerHTML += `<option value="${code}">${name}</option>`;
+}
+fromLang.value = "ar";
+toLang.value = "en";
 
-    sourceText.addEventListener('input', () => {
-        charCount.textContent = sourceText.value.length.toLocaleString();
-    });
+// ===== تبديل اللغات =====
+document.getElementById("swapBtn").onclick = () => {
+  [fromLang.value, toLang.value] = [toLang.value, fromLang.value];
+  [inputText.value, outputText.value] = [outputText.value, inputText.value];
+};
 
-    // استيراد واستخراج النصوص من ملفات TXT أو PDF
-    fileInput.addEventListener('change', async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+// ===== الترجمة النصية =====
+document.getElementById("translateBtn").onclick = async () => {
+  const text = inputText.value.trim();
+  if (!text) return alert("اكتب نصاً أولاً");
 
-        if (file.type === 'text/plain') {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                sourceText.value = event.target.result.slice(0, 25000);
-                charCount.textContent = sourceText.value.length.toLocaleString();
-                showToast('تم رفع واستخراج النص 📄', 'info');
-            };
-            reader.readAsText(file);
-        } else if (file.type === 'application/pdf') {
-            try {
-                loadingOverlay.classList.remove('hidden');
-                const arrayBuffer = await file.arrayBuffer();
-                const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-                let fullText = '';
+  outputText.value = "⏳ جارٍ الترجمة...";
 
-                for (let i = 1; i <= pdf.numPages; i++) {
-                    const page = await pdf.getPage(i);
-                    const textContent = await page.getTextContent();
-                    const pageText = textContent.items.map(item => item.str).join(' ');
-                    fullText += pageText + '\n';
-                    if (fullText.length >= 25000) break;
-                }
+  try {
+    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${fromLang.value}|${toLang.value}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    outputText.value = data.responseData.translatedText || "❌ تعذّرت الترجمة";
+  } catch (e) {
+    outputText.value = "❌ خطأ في الاتصال بالخدمة";
+  }
+};
 
-                sourceText.value = fullText.slice(0, 25000);
-                charCount.textContent = sourceText.value.length.toLocaleString();
-                showToast('تم استخراج النص من ملف PDF 📑', 'info');
-            } catch (err) {
-                showToast('خطأ أثناء قراءة PDF', 'error');
-            } finally {
-                loadingOverlay.classList.add('hidden');
-            }
-        }
-    });
+// ===== الإدخال الصوتي (تحويل الكلام إلى نص) =====
+document.getElementById("micBtn").onclick = () => {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return alert("متصفحك لا يدعم الإدخال الصوتي. جرّب Chrome.");
 
-    // الترجمة الصوتية عبر الميكروفون
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        const recognition = new SpeechRecognition();
+  const recognition = new SR();
+  recognition.lang = fromLang.value;
+  recognition.interimResults = false;
+  recognition.onresult = (e) => {
+    inputText.value = e.results[0][0].transcript;
+  };
+  recognition.onerror = () => alert("تعذّر التقاط الصوت");
+  recognition.start();
+};
 
-        micBtn.addEventListener('click', () => {
-            recognition.lang = sourceLang.value === 'ar' ? 'ar-SA' : 'en-US';
-            recognition.start();
-            micBtn.classList.add('recording');
-            showToast('جاري تسجيل الصوت...', 'info');
-        });
+// ===== النطق الصوتي (تحويل النص إلى كلام) =====
+function speak(text, lang) {
+  if (!text) return;
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = lang;
+  speechSynthesis.speak(utter);
+}
 
-        recognition.onresult = (event) => {
-            const transcript = event.results[0][0].transcript;
-            sourceText.value += ' ' + transcript;
-            charCount.textContent = sourceText.value.length.toLocaleString();
-            micBtn.classList.remove('recording');
-        };
+document.getElementById("speakInput").onclick = () =>
+  speak(inputText.value, fromLang.value);
 
-        recognition.onerror = () => micBtn.classList.remove('recording');
-        recognition.onend = () => micBtn.classList.remove('recording');
-    }
+document.getElementById("speakOutput").onclick = () =>
+  speak(outputText.value, toLang.value);
 
-    // القراءة الصوتية للنص المترجم
-    speakBtn.addEventListener('click', () => {
-        if (!targetText.value) return;
-        const utterance = new SpeechSynthesisUtterance(targetText.value);
-        utterance.lang = targetLang.value;
-        window.speechSynthesis.speak(utterance);
-    });
+// ===== نسخ =====
+document.getElementById("copyBtn").onclick = () => {
+  if (!outputText.value) return;
+  navigator.clipboard.writeText(outputText.value);
+  alert("✅ تم النسخ");
+};
 
-    // تبديل اللغات
-    swapBtn.addEventListener('click', () => {
-        const tempLang = sourceLang.value;
-        sourceLang.value = targetLang.value;
-        targetLang.value = tempLang;
-
-        const tempText = sourceText.value;
-        sourceText.value = targetText.value;
-        targetText.value = tempText;
-
-        charCount.textContent = sourceText.value.length.toLocaleString();
-        updateDirections();
-        toggleButtons();
-    });
-
-    // زر الترجمة الرئيسي
-    translateBtn.addEventListener('click', async () => {
-        const text = sourceText.value.trim();
-        if (!text) {
-            showToast('أدخل نصاً أولاً', 'error');
-            return;
-        }
-
-        loadingOverlay.classList.remove('hidden');
-
-        try {
-            const sLang = sourceLang.value;
-            const tLang = targetLang.value;
-            const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text.slice(0, 2000))}&langpair=${sLang}|${tLang}`);
-            const data = await response.json();
-
-            if (data.responseData) {
-                targetText.value = data.responseData.translatedText;
-                showToast('تمت الترجمة بنجاح ✨', 'success');
-            }
-        } catch (err) {
-            showToast('خطأ في الاتصال بالسيرفر', 'error');
-        } finally {
-            loadingOverlay.classList.add('hidden');
-            toggleButtons();
-        }
-    });
-
-    clearBtn.addEventListener('click', () => {
-        sourceText.value = '';
-        targetText.value = '';
-        charCount.textContent = '0';
-        toggleButtons();
-    });
-
-    copyBtn.addEventListener('click', () => {
-        navigator.clipboard.writeText(targetText.value);
-        showToast('تم النسخ 📋', 'success');
-    });
-
-    function toggleButtons() {
-        if (targetText.value.trim() !== '') {
-            copyBtn.removeAttribute('disabled');
-            speakBtn.removeAttribute('disabled');
-        } else {
-            copyBtn.setAttribute('disabled', 'true');
-            speakBtn.setAttribute('disabled', 'true');
-        }
-    }
-
-    function showToast(msg, type = 'info') {
-        const toast = document.createElement('div');
-        toast.className = 'toast';
-        toast.textContent = msg;
-        if (type === 'error') toast.style.background = 'var(--danger)';
-        if (type === 'success') toast.style.background = 'var(--primary)';
-        document.getElementById('toastContainer').appendChild(toast);
-        setTimeout(() => toast.remove(), 2500);
-    }
-
-    sourceLang.addEventListener('change', updateDirections);
-    targetLang.addEventListener('change', updateDirections);
-    updateDirections();
-});
+// ===== مسح =====
+document.getElementById("clearBtn").onclick = () => {
+  inputText.value = "";
+  outputText.value = "";
+};
